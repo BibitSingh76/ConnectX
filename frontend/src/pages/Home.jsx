@@ -4,16 +4,28 @@ import { Video, Plus, LogIn, Shield, Zap, Lock, Sparkles, Monitor, Users, CheckC
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { generateRoomId } from '../utils/roomIdGenerator';
-import { useMeeting } from '../context/MeetingContext';
+import { createMeetingApi } from '../services/apiService';
+import { useToast } from '../context/ToastContext';
 
 export const Home = () => {
   const navigate = useNavigate();
-  const { setRoomId } = useMeeting();
+  const { setRoomId, userName } = useMeeting();
+  const { addToast } = useToast();
 
-  const handleCreateMeeting = () => {
-    const newRoomId = generateRoomId();
-    setRoomId(newRoomId);
-    navigate(`/prejoin/${newRoomId}`);
+  const handleCreateMeeting = async () => {
+    try {
+      const newRoomId = generateRoomId();
+      const res = await createMeetingApi({
+        meetingId: newRoomId,
+        title: 'ConnectX Instant Meeting',
+        hostName: userName || 'Host',
+      });
+      const persistedId = res.data?.meetingId || newRoomId;
+      setRoomId(persistedId);
+      navigate(`/prejoin/${persistedId}`);
+    } catch (err) {
+      addToast(err.message || 'Failed to create meeting', 'error');
+    }
   };
 
   const handleJoinMeeting = () => {

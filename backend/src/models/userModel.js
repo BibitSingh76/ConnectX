@@ -10,10 +10,16 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [
+        function () {
+          return !this.isGuest;
+        },
+        'Email is required for registered users',
+      ],
       trim: true,
       lowercase: true,
       unique: true,
+      sparse: true,
       index: true,
     },
     passwordHash: {

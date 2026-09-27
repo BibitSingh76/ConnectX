@@ -4,6 +4,8 @@ import { Video, Calendar, Copy, Check, ArrowRight, Search, Filter } from 'lucide
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { TableSkeleton } from '../components/states/Skeleton';
+import { EmptyState } from '../components/states/EmptyState';
 
 export const MyMeetings = () => {
   const navigate = useNavigate();
@@ -97,12 +99,16 @@ export const MyMeetings = () => {
         </div>
 
         {/* Meetings List */}
-        {filteredMeetings.length === 0 ? (
-          <div className="text-center py-16 text-slate-500">
-            <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-semibold text-slate-300">No meeting records found</p>
-            <p className="text-xs text-slate-500 mt-1">Try adjusting your search query or status filter.</p>
-          </div>
+        {loading ? (
+          <TableSkeleton />
+        ) : filteredMeetings.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="No meeting records found"
+            description="Try adjusting your search query or status filter, or host a new meeting session."
+            actionLabel="Create Meeting"
+            onAction={() => navigate('/dashboard')}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

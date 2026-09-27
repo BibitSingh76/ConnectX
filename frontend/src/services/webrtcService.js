@@ -2,12 +2,42 @@
  * WebRTC Service - Enterprise-grade WebRTC PeerConnection, ICE Recovery, and Device Manager
  */
 
-const RTC_CONFIG = {
-  iceServers: [
+/**
+ * Dynamic ICE Server Resolver supporting STUN & Configurable TURN Servers
+ */
+const getRTCConfig = () => {
+  const defaultServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-  ],
+  ];
+
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+  const turnPassword = import.meta.env.VITE_TURN_PASSWORD;
+
+  if (turnUrl) {
+    const turnServer = { urls: turnUrl };
+    if (turnUsername) turnServer.username = turnUsername;
+    if (turnPassword) turnServer.credential = turnPassword;
+    defaultServers.push(turnServer);
+  }
+
+  if (import.meta.env.VITE_ICE_SERVERS) {
+    try {
+      const customServers = JSON.parse(import.meta.env.VITE_ICE_SERVERS);
+      if (Array.isArray(customServers) && customServers.length > 0) {
+        return { iceServers: customServers, iceTransportPolicy: 'all' };
+      }
+    } catch (err) {
+      console.warn('[WebRTCService] Failed to parse custom VITE_ICE_SERVERS:', err);
+    }
+  }
+
+  return {
+    iceServers: defaultServers,
+    iceTransportPolicy: 'all',
+  };
 };
 
 class WebRTCService {
@@ -286,8 +316,9 @@ class WebRTCService {
     }
 
     this.iceCandidateQueue = [];
-    this.peerConnection = new RTCPeerConnection(RTC_CONFIG);
-    console.log('[WebRTCService] RTCPeerConnection created');
+    const rtcConfig = getRTCConfig();
+    this.peerConnection = new RTCPeerConnection(rtcConfig);
+    console.log('[WebRTCService] RTCPeerConnection created with ICE servers:', rtcConfig.iceServers.length);
 
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => {

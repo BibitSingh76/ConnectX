@@ -17,13 +17,14 @@ import {
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
-import { useMeeting } from '../context/MeetingContext';
-import { generateRoomId } from '../utils/roomIdGenerator';
+import { createMeetingApi } from '../services/apiService';
+import { useToast } from '../context/ToastContext';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setRoomId } = useMeeting();
+  const { addToast } = useToast();
 
   const [metrics, setMetrics] = useState({
     totalMeetings: 0,
@@ -54,10 +55,20 @@ export const Dashboard = () => {
     fetchSummary();
   }, []);
 
-  const handleCreateMeeting = () => {
-    const newRoomId = generateRoomId();
-    setRoomId(newRoomId);
-    navigate(`/prejoin/${newRoomId}`);
+  const handleCreateMeeting = async () => {
+    try {
+      const newRoomId = generateRoomId();
+      const res = await createMeetingApi({
+        meetingId: newRoomId,
+        title: `${user?.name || 'User'}'s Session`,
+        hostName: user?.name || 'Host',
+      });
+      const persistedId = res.data?.meetingId || newRoomId;
+      setRoomId(persistedId);
+      navigate(`/prejoin/${persistedId}`);
+    } catch (err) {
+      addToast(err.message || 'Failed to create meeting', 'error');
+    }
   };
 
   const handleJoinMeeting = () => {

@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertTriangle, LogOut } from 'lucide-react';
+import { AlertTriangle, LogOut, PhoneOff } from 'lucide-react';
 import { Button } from '../Button';
 
-export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+export const ConfirmModal = ({ isOpen, onClose, onConfirm, onEndMeeting, title, message }) => {
   if (!isOpen) return null;
 
   return (
@@ -19,13 +19,20 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => 
           </p>
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose} className="w-1/2">
-            Stay in Call
-          </Button>
-          <Button variant="danger" onClick={onConfirm} className="w-1/2" icon={LogOut}>
-            Leave Call
-          </Button>
+        <div className="flex flex-col gap-2 pt-2">
+          {onEndMeeting && (
+            <Button variant="danger" onClick={onEndMeeting} className="w-full" icon={PhoneOff}>
+              End Meeting for All
+            </Button>
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={onClose} className="w-1/2">
+              Stay in Call
+            </Button>
+            <Button variant="outline" onClick={onConfirm} className="w-1/2 border-rose-500/30 text-rose-400 hover:bg-rose-500/10" icon={LogOut}>
+              Leave Call
+            </Button>
+          </div>
         </div>
       </div>
     </div>

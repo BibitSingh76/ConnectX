@@ -1,5 +1,5 @@
 import React from 'react';
-import { LucideIcon, Inbox } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { Button } from '../Button';
 
 export const EmptyState = ({

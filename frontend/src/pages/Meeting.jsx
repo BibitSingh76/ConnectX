@@ -28,6 +28,7 @@ import { useWebRTC } from '../hooks/useWebRTC';
 import { useMeeting } from '../context/MeetingContext';
 import { useToast } from '../context/ToastContext';
 import socketService from '../services/socketService';
+import { leaveMeetingApi, endMeetingApi } from '../services/apiService';
 
 export const Meeting = () => {
   const { roomId } = useParams();
@@ -103,10 +104,16 @@ export const Meeting = () => {
       );
     });
 
+    socketService.on('room_full', ({ message }) => {
+      addToast(message || 'Room is full. Maximum 2 participants allowed.', 'error');
+      navigate('/join');
+    });
+
     return () => {
       socketService.off('peer_joined');
       socketService.off('peer_left');
       socketService.off('peer_media_status');
+      socketService.off('room_full');
     };
   }, [roomId, addToast]);
 
@@ -154,9 +161,29 @@ export const Meeting = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleConfirmLeave = () => {
+  const handleConfirmLeave = async () => {
+    try {
+      if (roomId) {
+        await leaveMeetingApi(roomId, { displayName: userName });
+      }
+    } catch (err) {
+      console.warn('Leave meeting API notification error:', err);
+    }
     leaveCall();
     addToast('Left meeting call', 'info');
+    navigate('/');
+  };
+
+  const handleEndMeeting = async () => {
+    try {
+      if (roomId) {
+        await endMeetingApi(roomId);
+        addToast('Meeting ended successfully', 'info');
+      }
+    } catch (err) {
+      console.warn('End meeting API error:', err);
+    }
+    leaveCall();
     navigate('/');
   };
 
@@ -418,8 +445,9 @@ export const Meeting = () => {
         isOpen={isConfirmLeaveOpen}
         onClose={() => setIsConfirmLeaveOpen(false)}
         onConfirm={handleConfirmLeave}
-        title="Leave Meeting?"
-        message="Are you sure you want to exit the current call? You can rejoin anytime using the room code."
+        onEndMeeting={handleEndMeeting}
+        title="Leave or End Meeting?"
+        message="Choose whether to leave the call yourself or end the session for all participants."
       />
     </div>
   );

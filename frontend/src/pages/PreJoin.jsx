@@ -6,11 +6,14 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { SettingsModal } from '../components/modals/SettingsModal';
 import { useMeeting } from '../context/MeetingContext';
+import { useToast } from '../context/ToastContext';
+import { getMeetingApi, joinMeetingApi } from '../services/apiService';
 
 export const PreJoin = () => {
   const { roomId: paramRoomId } = useParams();
   const navigate = useNavigate();
   const { roomId, setRoomId, userName, setUserName, isMicOn, setIsMicOn, isCamOn, setIsCamOn } = useMeeting();
+  const { addToast } = useToast();
 
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
@@ -79,8 +82,19 @@ export const PreJoin = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleEnterMeeting = () => {
-    navigate(`/meeting/${currentRoomId}`);
+  const handleEnterMeeting = async () => {
+    if (!currentRoomId) return;
+    try {
+      const meetingRes = await getMeetingApi(currentRoomId);
+      if (meetingRes.data?.status === 'ended') {
+        addToast('This meeting has already ended.', 'error');
+        return;
+      }
+      await joinMeetingApi(currentRoomId, { displayName: userName || 'Guest' });
+      navigate(`/meeting/${currentRoomId}`);
+    } catch (err) {
+      addToast(err.message || 'Failed to join meeting', 'error');
+    }
   };
 
   return (

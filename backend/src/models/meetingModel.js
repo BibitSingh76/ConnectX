@@ -18,6 +18,11 @@ const meetingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    hostName: {
+      type: String,
+      trim: true,
+      default: 'Host',
+    },
     participants: [
       {
         type: mongoose.Schema.Types.ObjectId,

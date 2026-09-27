@@ -49,6 +49,48 @@ const getMeeting = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc   Record joining an active meeting
+ * @route  POST /api/meetings/:id/join
+ * @access Public / Authenticated
+ */
+const joinMeeting = asyncHandler(async (req, res) => {
+  const meetingId = req.params.id;
+  const { displayName } = req.body;
+
+  const meeting = await meetingService.joinMeeting({
+    meetingId,
+    userId: req.user ? req.user._id : null,
+    displayName: req.user ? req.user.name : displayName,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: meeting,
+  });
+});
+
+/**
+ * @desc   Record leaving an active meeting
+ * @route  POST /api/meetings/:id/leave
+ * @access Public / Authenticated
+ */
+const leaveMeeting = asyncHandler(async (req, res) => {
+  const meetingId = req.params.id;
+  const { displayName } = req.body;
+
+  const meeting = await meetingService.leaveMeeting({
+    meetingId,
+    userId: req.user ? req.user._id : null,
+    displayName: req.user ? req.user.name : displayName,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: meeting,
+  });
+});
+
+/**
  * @desc   End an active meeting session
  * @route  PATCH /api/meetings/:id/end
  * @access Public / Authenticated
@@ -56,7 +98,7 @@ const getMeeting = asyncHandler(async (req, res) => {
 const endMeeting = asyncHandler(async (req, res) => {
   const meetingId = req.params.id;
 
-  const meeting = await meetingService.endMeeting(meetingId);
+  const meeting = await meetingService.endMeeting(meetingId, req.user ? req.user._id : null);
 
   res.status(200).json({
     success: true,
@@ -101,6 +143,8 @@ const getMeetings = asyncHandler(async (req, res) => {
 module.exports = {
   createMeeting,
   getMeeting,
+  joinMeeting,
+  leaveMeeting,
   endMeeting,
   getSummary,
   getMeetings,

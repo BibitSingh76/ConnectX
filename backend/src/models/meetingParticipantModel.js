@@ -28,6 +28,11 @@ const meetingParticipantSchema = new mongoose.Schema(
     leftAt: {
       type: Date,
     },
+    status: {
+      type: String,
+      enum: ['joined', 'left'],
+      default: 'joined',
+    },
   },
   {
     timestamps: true,

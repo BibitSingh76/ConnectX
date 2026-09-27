@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageSquare, Inbox } from 'lucide-react';
+import { X, Send, MessageSquare, Inbox, AlertCircle } from 'lucide-react';
 import { Button } from '../Button';
 import socketService from '../../services/socketService';
 
 export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessageRead }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (!roomId) return;
 
     const handleChatMessage = (messagePayload) => {
-      setMessages((prev) => [...prev, messagePayload]);
+      if (!messagePayload || !messagePayload.id) return;
+
+      setMessages((prev) => {
+        // Prevent duplicate messages by ID
+        if (prev.some((m) => m.id === messagePayload.id)) {
+          return prev;
+        }
+        return [...prev, messagePayload];
+      });
+
       if (!isOpen && onNewMessageRead) {
         onNewMessageRead();
       }
@@ -27,7 +37,7 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
 
   // Auto-scroll to latest message
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && isOpen) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
@@ -36,9 +46,17 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    setErrorMsg('');
 
-    socketService.sendChatMessage(roomId, inputText.trim(), currentUserName || 'You');
+    const cleanText = inputText.trim();
+    if (!cleanText) return;
+
+    if (cleanText.length > 1000) {
+      setErrorMsg('Message cannot exceed 1000 characters.');
+      return;
+    }
+
+    socketService.sendChatMessage(roomId, cleanText, currentUserName || 'You');
     setInputText('');
   };
 
@@ -96,7 +114,7 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
                     <span className="font-bold opacity-90">{isSelf ? 'You' : msg.senderName}</span>
                     <span className="text-[10px] opacity-70">{msg.timestamp}</span>
                   </div>
-                  <p className="break-words">{msg.text}</p>
+                  <p className="break-words select-text">{msg.text}</p>
                 </div>
               </div>
             );
@@ -105,13 +123,25 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Validation Error Alert */}
+      {errorMsg && (
+        <div className="px-4 py-2 bg-rose-500/10 border-t border-rose-500/20 text-rose-300 text-[11px] flex items-center gap-1.5">
+          <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {/* Input Form */}
       <form onSubmit={handleSend} className="p-3 border-t border-slate-800 bg-slate-900/80 flex items-center gap-2">
         <input
           type="text"
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={(e) => {
+            setInputText(e.target.value);
+            if (errorMsg) setErrorMsg('');
+          }}
           onKeyDown={handleKeyDown}
+          maxLength={1000}
           placeholder="Type message & press Enter..."
           className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />

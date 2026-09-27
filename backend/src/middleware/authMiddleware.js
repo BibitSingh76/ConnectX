@@ -50,4 +50,29 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { protect };
+/**
+ * Optional Auth - Populates req.user if JWT access token is present and valid, otherwise proceeds as guest
+ */
+const optionalAuth = asyncHandler(async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, config.jwtSecret);
+      const user = await User.findById(decoded.id).select('-passwordHash');
+      if (user) {
+        req.user = user;
+      }
+    } catch (error) {
+      // Ignore token verification errors for guest fallback
+    }
+  }
+
+  next();
+});
+
+module.exports = { protect, optionalAuth };
