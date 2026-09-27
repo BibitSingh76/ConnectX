@@ -6,6 +6,7 @@ import { Card } from '../components/Card';
 import { generateRoomId } from '../utils/roomIdGenerator';
 import { createMeetingApi } from '../services/apiService';
 import { useToast } from '../context/ToastContext';
+import { useMeeting } from '../context/MeetingContext';
 
 export const Home = () => {
   const navigate = useNavigate();

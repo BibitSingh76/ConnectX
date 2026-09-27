@@ -19,6 +19,7 @@ import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { createMeetingApi, getSummaryMetricsApi } from '../services/apiService';
 import { useToast } from '../context/ToastContext';
+import { useMeeting } from '../context/MeetingContext';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
