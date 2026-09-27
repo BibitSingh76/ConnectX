@@ -17,7 +17,7 @@ import {
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
-import { createMeetingApi } from '../services/apiService';
+import { createMeetingApi, getSummaryMetricsApi } from '../services/apiService';
 import { useToast } from '../context/ToastContext';
 
 export const Dashboard = () => {
@@ -38,12 +38,9 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/meetings/summary`);
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData.success) {
-            setMetrics(resData.data);
-          }
+        const resData = await getSummaryMetricsApi();
+        if (resData.success) {
+          setMetrics(resData.data);
         }
       } catch (err) {
         console.warn('Dashboard metrics fetch error:', err);

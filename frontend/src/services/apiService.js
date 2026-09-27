@@ -127,3 +127,30 @@ export const endMeetingApi = async (meetingId) => {
   }
   return data;
 };
+
+export const getSummaryMetricsApi = async () => {
+  const response = await fetch(`${API_URL}/meetings/summary`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Failed to fetch summary metrics');
+  }
+  return data;
+};
+
+export const listMeetingsApi = async (status = 'all') => {
+  const query = status && status !== 'all' ? `?status=${status}` : '';
+  const response = await fetch(`${API_URL}/meetings${query}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Failed to fetch meetings history');
+  }
+  return data;
+};

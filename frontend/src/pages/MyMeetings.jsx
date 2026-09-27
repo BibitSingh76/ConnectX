@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { TableSkeleton } from '../components/states/Skeleton';
 import { EmptyState } from '../components/states/EmptyState';
+import { listMeetingsApi } from '../services/apiService';
 
 export const MyMeetings = () => {
   const navigate = useNavigate();
@@ -18,15 +19,9 @@ export const MyMeetings = () => {
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
-        const url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/meetings${
-          filterStatus !== 'all' ? `?status=${filterStatus}` : ''
-        }`;
-        const response = await fetch(url);
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData.success) {
-            setMeetings(resData.meetings || []);
-          }
+        const resData = await listMeetingsApi(filterStatus);
+        if (resData?.success) {
+          setMeetings(resData.meetings || []);
         }
       } catch (err) {
         console.warn('Fetch meetings error:', err);
