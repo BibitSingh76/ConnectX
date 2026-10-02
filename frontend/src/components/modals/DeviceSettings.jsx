@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Mic, Volume2, Sliders, ShieldCheck, Check, Activity } from 'lucide-react';
 import { Button } from '../Button';
+import { getSafeUserMedia } from '../../services/webrtcService';
 
 export const DeviceSettings = ({
   isOpen,
@@ -28,7 +29,7 @@ export const DeviceSettings = ({
 
     const setupTestAudioMeter = async () => {
       try {
-        localTestStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        localTestStream = await getSafeUserMedia();
 
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = localTestStream;

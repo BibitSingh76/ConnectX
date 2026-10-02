@@ -67,7 +67,7 @@ const runTests = async () => {
     console.log('\n[G & H] Ending meeting...');
     // Wait 2 seconds so duration is > 0
     await new Promise((r) => setTimeout(r, 2000));
-    const endedMeeting = await meetingService.endMeeting(testMeetingId);
+    const endedMeeting = await meetingService.endMeeting(testMeetingId, user._id);
 
     console.log(`✓ Meeting Ended Status: ${endedMeeting.status}`);
     console.log(`✓ Ended At: ${endedMeeting.endTime}`);

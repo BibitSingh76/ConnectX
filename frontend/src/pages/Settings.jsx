@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Camera, Mic, Bell, Shield, Sliders, Check } from 'lucide-react';
+import { Camera, Mic, Bell, Shield, Sliders, Check } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { useTheme } from '../context/ThemeContext';
 
 export const Settings = () => {
-  const { theme, toggleTheme } = useTheme();
-
   const [notifications, setNotifications] = useState({
     meetingReminders: true,
     soundAlerts: true,
@@ -28,31 +25,10 @@ export const Settings = () => {
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12 space-y-6">
       <div>
         <h1 className="text-3xl font-extrabold text-slate-100">Application Settings</h1>
-        <p className="text-xs text-slate-400 mt-1">Customize appearance, audio/video devices, and notification alerts.</p>
+        <p className="text-xs text-slate-400 mt-1">Customize audio/video devices and notification alerts.</p>
       </div>
 
       <div className="space-y-6">
-        {/* Appearance Settings */}
-        <Card className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Sliders className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-base font-bold text-slate-100">Appearance & Theme</h2>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl">
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-bold text-slate-200">Interface Theme</h3>
-              <p className="text-xs text-slate-400">Current theme: <span className="capitalize text-indigo-400 font-semibold">{theme}</span></p>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 hover:bg-slate-800 transition flex items-center gap-2 text-xs font-semibold"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-              <span>Toggle to {theme === 'dark' ? 'Light' : 'Dark'}</span>
-            </button>
-          </div>
-        </Card>
 
         {/* Media Devices Preferences */}
         <Card className="space-y-4">

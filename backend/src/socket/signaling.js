@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const { meetingService } = require('../services');
 
 // Server-authoritative in-memory state tracking
 const rooms = new Map(); // roomId -> Set<socketId>
@@ -50,6 +51,11 @@ const removeSocketFromRoom = (socket, io) => {
     } else {
       rooms.delete(roomId);
       logger.info(`Room [${roomId}] cleaned up (0 participants remaining)`);
+
+      // Asynchronously end active meeting in MongoDB when last participant leaves
+      meetingService.autoEndMeeting(roomId).catch((err) => {
+        logger.error(`Error auto-ending meeting [${roomId}] in MongoDB: ${err.message}`);
+      });
     }
   }
 
@@ -75,6 +81,17 @@ const setupSignaling = (io) => {
       }
 
       const roomId = rawRoomId.trim();
+
+      // Idempotent check: if socket is already in this room, acknowledge without emitting false peer_left
+      if (socketToRoom.get(socket.id) === roomId && rooms.get(roomId)?.has(socket.id)) {
+        logger.info(`Socket [${socket.id}] already in room [${roomId}] -> sending current room status`);
+        const currentRoom = rooms.get(roomId);
+        return socket.emit('room_joined', {
+          roomId,
+          isInitiator: currentRoom.size === 1,
+          participantsCount: currentRoom.size,
+        });
+      }
 
       if (socketToRoom.has(socket.id)) {
         removeSocketFromRoom(socket, io);
@@ -147,11 +164,14 @@ const setupSignaling = (io) => {
     socket.on('media_status_change', ({ roomId, isMicOn, isCamOn }) => {
       const activeRoom = socketToRoom.get(socket.id);
       if (activeRoom === roomId) {
-        socket.to(roomId).emit('peer_media_status', {
-          socketId: socket.id,
-          isMicOn: !!isMicOn,
-          isCamOn: !!isCamOn,
-        });
+        const room = rooms.get(roomId);
+        if (room && room.size > 1) {
+          socket.to(roomId).emit('peer_media_status', {
+            socketId: socket.id,
+            isMicOn: !!isMicOn,
+            isCamOn: !!isCamOn,
+          });
+        }
       }
     });
 
@@ -167,10 +187,13 @@ const setupSignaling = (io) => {
 
       if (!offer) return;
 
-      socket.to(roomId).emit('webrtc_offer', {
-        offer,
-        senderId: socket.id,
-      });
+      const room = rooms.get(roomId);
+      if (room && room.size > 1) {
+        socket.to(roomId).emit('webrtc_offer', {
+          offer,
+          senderId: socket.id,
+        });
+      }
     });
 
     // --- 5. WebRTC Answer Forwarding with Access Validation ---
@@ -185,10 +208,13 @@ const setupSignaling = (io) => {
 
       if (!answer) return;
 
-      socket.to(roomId).emit('webrtc_answer', {
-        answer,
-        senderId: socket.id,
-      });
+      const room = rooms.get(roomId);
+      if (room && room.size > 1) {
+        socket.to(roomId).emit('webrtc_answer', {
+          answer,
+          senderId: socket.id,
+        });
+      }
     });
 
     // --- 6. ICE Candidate Forwarding with Access Validation ---
@@ -203,10 +229,13 @@ const setupSignaling = (io) => {
 
       if (!candidate) return;
 
-      socket.to(roomId).emit('ice_candidate', {
-        candidate,
-        senderId: socket.id,
-      });
+      const room = rooms.get(roomId);
+      if (room && room.size > 1) {
+        socket.to(roomId).emit('ice_candidate', {
+          candidate,
+          senderId: socket.id,
+        });
+      }
     });
 
     // --- 7. Leave Room ---

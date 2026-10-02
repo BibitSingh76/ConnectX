@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Video, Calendar, Copy, Check, ArrowRight, Search, Filter } from 'lucide-react';
 import { Card } from '../components/Card';
@@ -17,20 +17,28 @@ export const MyMeetings = () => {
   const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchMeetings = async () => {
       try {
         const resData = await listMeetingsApi(filterStatus);
-        if (resData?.success) {
+        if (isMounted && resData?.success) {
           setMeetings(resData.meetings || []);
         }
       } catch (err) {
-        console.warn('Fetch meetings error:', err);
+        if (isMounted) {
+          console.warn('Fetch meetings error:', err);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchMeetings();
+    return () => {
+      isMounted = false;
+    };
   }, [filterStatus]);
 
   const copyRoomLink = (id) => {
@@ -50,10 +58,13 @@ export const MyMeetings = () => {
     return `${mins} mins`;
   };
 
-  const filteredMeetings = meetings.filter((m) =>
-    m.meetingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.title && m.title.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredMeetings = useMemo(() => {
+    return meetings.filter(
+      (m) =>
+        m.meetingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.title && m.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [meetings, searchQuery]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">

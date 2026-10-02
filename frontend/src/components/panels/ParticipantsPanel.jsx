@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { X, Users, Mic, MicOff, Video, VideoOff, ShieldCheck } from 'lucide-react';
 
-export const ParticipantsPanel = ({
+export const ParticipantsPanel = React.memo(({
   isOpen,
   onClose,
   participants = [],
@@ -9,30 +9,33 @@ export const ParticipantsPanel = ({
   isMicOn,
   isCamOn,
 }) => {
+  // Build reactive participant list including local and active remote peers
+  const activeParticipants = useMemo(
+    () => [
+      {
+        id: 'local',
+        name: `${currentUserName || 'You'} (Host)`,
+        isLocal: true,
+        micOn: isMicOn,
+        camOn: isCamOn,
+        status: 'Connected',
+      },
+      ...participants.map((p) => ({
+        id: p.socketId || p.id,
+        name: p.name || 'Remote Peer',
+        isLocal: false,
+        micOn: p.isMicOn !== undefined ? p.isMicOn : true,
+        camOn: p.isCamOn !== undefined ? p.isCamOn : true,
+        status: 'Connected',
+      })),
+    ],
+    [currentUserName, isMicOn, isCamOn, participants]
+  );
+
   if (!isOpen) return null;
 
-  // Build reactive participant list including local and active remote peers
-  const activeParticipants = [
-    {
-      id: 'local',
-      name: `${currentUserName || 'You'} (Host)`,
-      isLocal: true,
-      micOn: isMicOn,
-      camOn: isCamOn,
-      status: 'Connected',
-    },
-    ...participants.map((p) => ({
-      id: p.socketId || p.id,
-      name: p.name || 'Remote Peer',
-      isLocal: false,
-      micOn: p.isMicOn !== undefined ? p.isMicOn : true,
-      camOn: p.isCamOn !== undefined ? p.isCamOn : true,
-      status: 'Connected',
-    })),
-  ];
-
   return (
-    <div className="w-full md:w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl z-30 animate-fade-in">
+    <div className="absolute inset-0 md:relative md:inset-auto w-full md:w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl z-30 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
         <div className="flex items-center gap-2">
@@ -86,4 +89,4 @@ export const ParticipantsPanel = ({
       </div>
     </div>
   );
-};
+});

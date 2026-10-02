@@ -7,19 +7,21 @@ import { generateRoomId } from '../utils/roomIdGenerator';
 import { createMeetingApi } from '../services/apiService';
 import { useToast } from '../context/ToastContext';
 import { useMeeting } from '../context/MeetingContext';
+import { useAuth } from '../context/AuthContext';
 
 export const Home = () => {
   const navigate = useNavigate();
   const { setRoomId, userName } = useMeeting();
   const { addToast } = useToast();
+  const { isAuthenticated, user } = useAuth();
 
   const handleCreateMeeting = async () => {
     try {
       const newRoomId = generateRoomId();
       const res = await createMeetingApi({
         meetingId: newRoomId,
-        title: 'ConnectX Instant Meeting',
-        hostName: userName || 'Host',
+        title: `${user?.name || 'User'}'s Instant Meeting`,
+        hostName: user?.name || userName || 'Host',
       });
       const persistedId = res.data?.meetingId || newRoomId;
       setRoomId(persistedId);
@@ -82,13 +84,15 @@ export const Home = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button
-              onClick={handleCreateMeeting}
-              className="w-full sm:w-auto text-base !px-8 !py-4 shadow-xl shadow-indigo-600/30"
-              icon={Plus}
-            >
-              Create New Meeting
-            </Button>
+            {isAuthenticated && (
+              <Button
+                onClick={handleCreateMeeting}
+                className="w-full sm:w-auto text-base !px-8 !py-4 shadow-xl shadow-indigo-600/30"
+                icon={Plus}
+              >
+                Create New Meeting
+              </Button>
+            )}
 
             <Button
               onClick={handleJoinMeeting}

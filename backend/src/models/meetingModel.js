@@ -51,4 +51,8 @@ const meetingSchema = new mongoose.Schema(
   }
 );
 
+// Compound indexes justified by query patterns (listMeetings & getSummaryMetrics)
+meetingSchema.index({ status: 1, createdAt: -1 });
+meetingSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Meeting', meetingSchema);

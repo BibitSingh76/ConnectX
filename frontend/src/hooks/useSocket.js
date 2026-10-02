@@ -5,19 +5,19 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socket = socketService.connect();
+    socketService.connect();
 
     const handleConnect = () => setIsConnected(true);
     const handleDisconnect = () => setIsConnected(false);
 
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
+    socketService.on('connect', handleConnect);
+    socketService.on('disconnect', handleDisconnect);
 
-    setIsConnected(socket.connected);
+    setIsConnected(socketService.socket?.connected || false);
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
+      socketService.off('connect', handleConnect);
+      socketService.off('disconnect', handleDisconnect);
     };
   }, []);
 

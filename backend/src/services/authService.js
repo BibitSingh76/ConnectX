@@ -76,7 +76,9 @@ class AuthService {
    * Get current authenticated user profile
    */
   async getCurrentUser(userId) {
-    const user = await User.findById(userId).select('-passwordHash');
+    const user = await User.findById(userId)
+      .select('name email avatar isGuest createdAt updatedAt')
+      .lean();
     if (!user) {
       const err = new Error('User not found');
       err.statusCode = 404;

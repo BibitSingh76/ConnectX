@@ -3,7 +3,7 @@ import { X, Send, MessageSquare, Inbox, AlertCircle } from 'lucide-react';
 import { Button } from '../Button';
 import socketService from '../../services/socketService';
 
-export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessageRead }) => {
+export const ChatPanel = React.memo(({ isOpen, onClose, roomId, currentUserName, onNewMessageRead }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -68,7 +68,7 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
   };
 
   return (
-    <div className="w-full md:w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl z-30 animate-fade-in">
+    <div className="absolute inset-0 md:relative md:inset-auto w-full md:w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl z-30 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
         <div className="flex items-center gap-2">
@@ -151,4 +151,4 @@ export const ChatPanel = ({ isOpen, onClose, roomId, currentUserName, onNewMessa
       </form>
     </div>
   );
-};
+});

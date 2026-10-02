@@ -18,6 +18,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { createMeetingApi, getSummaryMetricsApi } from '../services/apiService';
+import { generateRoomId } from '../utils/roomIdGenerator';
 import { useToast } from '../context/ToastContext';
 import { useMeeting } from '../context/MeetingContext';
 
@@ -37,20 +38,28 @@ export const Dashboard = () => {
   const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchSummary = async () => {
       try {
         const resData = await getSummaryMetricsApi();
-        if (resData.success) {
+        if (isMounted && resData.success) {
           setMetrics(resData.data);
         }
       } catch (err) {
-        console.warn('Dashboard metrics fetch error:', err);
+        if (isMounted) {
+          console.warn('Dashboard metrics fetch error:', err);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSummary();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCreateMeeting = async () => {

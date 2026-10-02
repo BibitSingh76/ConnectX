@@ -17,7 +17,7 @@ const protect = asyncHandler(async (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: {
-        message: 'Not authorized, no access token provided',
+        message: 'Authentication required to create a meeting',
         statusCode: 401,
       },
     });
@@ -25,13 +25,13 @@ const protect = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret);
-    const user = await User.findById(decoded.id).select('-passwordHash');
+    const user = await User.findById(decoded.id).select('name email avatar isGuest').lean();
 
     if (!user) {
       return res.status(401).json({
         success: false,
         error: {
-          message: 'User no longer exists',
+          message: 'Authentication required to create a meeting',
           statusCode: 401,
         },
       });
@@ -43,7 +43,7 @@ const protect = asyncHandler(async (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: {
-        message: 'Not authorized, token failed or expired',
+        message: 'Authentication required to create a meeting',
         statusCode: 401,
       },
     });
@@ -63,7 +63,7 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, config.jwtSecret);
-      const user = await User.findById(decoded.id).select('-passwordHash');
+      const user = await User.findById(decoded.id).select('name email avatar isGuest').lean();
       if (user) {
         req.user = user;
       }

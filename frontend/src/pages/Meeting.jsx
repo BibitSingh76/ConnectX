@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   PhoneOff,
@@ -72,15 +72,15 @@ export const Meeting = () => {
   }, [localStream, screenStream, isScreenSharing]);
 
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream || null;
     }
   }, [remoteStream]);
 
   useEffect(() => {
     if (!roomId) return;
 
-    socketService.on('peer_joined', ({ socketId }) => {
+    const handlePeerJoined = ({ socketId }) => {
       addToast('Remote participant connected to room', 'info');
       setRemoteParticipants([
         {
@@ -91,31 +91,36 @@ export const Meeting = () => {
           isCamOn: true,
         },
       ]);
-    });
+    };
 
-    socketService.on('peer_left', () => {
+    const handlePeerLeft = () => {
       addToast('Remote participant left the room', 'info');
       setRemoteParticipants([]);
-    });
+    };
 
-    socketService.on('peer_media_status', ({ socketId, isMicOn: remoteMic, isCamOn: remoteCam }) => {
+    const handlePeerMediaStatus = ({ socketId, isMicOn: remoteMic, isCamOn: remoteCam }) => {
       setRemoteParticipants((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isMicOn: remoteMic, isCamOn: remoteCam } : p))
       );
-    });
+    };
 
-    socketService.on('room_full', ({ message }) => {
+    const handleRoomFull = ({ message }) => {
       addToast(message || 'Room is full. Maximum 2 participants allowed.', 'error');
       navigate('/join');
-    });
+    };
+
+    socketService.on('peer_joined', handlePeerJoined);
+    socketService.on('peer_left', handlePeerLeft);
+    socketService.on('peer_media_status', handlePeerMediaStatus);
+    socketService.on('room_full', handleRoomFull);
 
     return () => {
-      socketService.off('peer_joined');
-      socketService.off('peer_left');
-      socketService.off('peer_media_status');
-      socketService.off('room_full');
+      socketService.off('peer_joined', handlePeerJoined);
+      socketService.off('peer_left', handlePeerLeft);
+      socketService.off('peer_media_status', handlePeerMediaStatus);
+      socketService.off('room_full', handleRoomFull);
     };
-  }, [roomId, addToast]);
+  }, [roomId, addToast, navigate]);
 
   useEffect(() => {
     if (roomId) {
@@ -187,6 +192,10 @@ export const Meeting = () => {
     navigate('/');
   };
 
+  const closePanel = useCallback(() => {
+    setActivePanel(null);
+  }, []);
+
   const togglePanel = (panelName) => {
     if (panelName === 'chat' && activePanel !== 'chat') {
       setUnreadChatCount(0);
@@ -194,11 +203,11 @@ export const Meeting = () => {
     setActivePanel((prev) => (prev === panelName ? null : panelName));
   };
 
-  const handleNewUnreadMessage = () => {
+  const handleNewUnreadMessage = useCallback(() => {
     if (activePanel !== 'chat') {
       setUnreadChatCount((prev) => prev + 1);
     }
-  };
+  }, [activePanel]);
 
   const statusStyles = {
     connecting: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
@@ -281,7 +290,7 @@ export const Meeting = () => {
             </div>
           </div>
 
-          <div className="absolute top-8 right-8 w-44 sm:w-60 aspect-video bg-slate-900 border-2 border-indigo-500/30 rounded-2xl overflow-hidden shadow-2xl z-10 flex items-center justify-center group hover:scale-105 transition-all">
+          <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-28 sm:w-44 md:w-60 aspect-video bg-slate-900 border-2 border-indigo-500/30 rounded-2xl overflow-hidden shadow-2xl z-10 flex items-center justify-center group hover:scale-105 transition-all">
             <video
               ref={localVideoRef}
               autoPlay
@@ -311,7 +320,7 @@ export const Meeting = () => {
 
         <ChatPanel
           isOpen={activePanel === 'chat'}
-          onClose={() => setActivePanel(null)}
+          onClose={closePanel}
           roomId={roomId}
           currentUserName={userName}
           onNewMessageRead={handleNewUnreadMessage}
@@ -319,7 +328,7 @@ export const Meeting = () => {
 
         <ParticipantsPanel
           isOpen={activePanel === 'participants'}
-          onClose={() => setActivePanel(null)}
+          onClose={closePanel}
           participants={remoteParticipants}
           currentUserName={userName}
           isMicOn={isMicOn}
@@ -337,7 +346,7 @@ export const Meeting = () => {
         <div className="flex items-center gap-2 sm:gap-3 mx-auto md:mx-0">
           <button
             onClick={handleToggleMic}
-            className={`p-3.5 rounded-2xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`p-3.5 rounded-2xl transition duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               isMicOn
                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                 : 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
@@ -350,7 +359,7 @@ export const Meeting = () => {
 
           <button
             onClick={handleToggleCam}
-            className={`p-3.5 rounded-2xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`p-3.5 rounded-2xl transition duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               isCamOn
                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                 : 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
@@ -363,7 +372,7 @@ export const Meeting = () => {
 
           <button
             onClick={handleToggleScreenShare}
-            className={`p-3.5 rounded-2xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`p-3.5 rounded-2xl transition duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               isScreenSharing
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -378,7 +387,7 @@ export const Meeting = () => {
 
           <button
             onClick={() => togglePanel('chat')}
-            className={`p-3.5 rounded-2xl transition duration-200 relative focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`p-3.5 rounded-2xl transition duration-200 touch-manipulation relative focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               activePanel === 'chat'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -396,7 +405,7 @@ export const Meeting = () => {
 
           <button
             onClick={() => togglePanel('participants')}
-            className={`p-3.5 rounded-2xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`p-3.5 rounded-2xl transition duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               activePanel === 'participants'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -409,7 +418,7 @@ export const Meeting = () => {
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition touch-manipulation focus:outline-none focus:ring-2 focus:ring-indigo-500"
             title="Audio & Video Settings"
             aria-label="Audio & Video Settings"
           >
@@ -418,7 +427,7 @@ export const Meeting = () => {
 
           <button
             onClick={() => setIsConfirmLeaveOpen(true)}
-            className="p-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition duration-200 ml-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="p-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition duration-200 touch-manipulation ml-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
             title="Leave Call"
             aria-label="Leave Call"
           >

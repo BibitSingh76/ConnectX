@@ -39,4 +39,9 @@ const meetingParticipantSchema = new mongoose.Schema(
   }
 );
 
+// Compound indexes justified by participant lookups & leave/end operations
+meetingParticipantSchema.index({ meetingId: 1, user: 1 });
+meetingParticipantSchema.index({ meetingId: 1, displayName: 1 });
+meetingParticipantSchema.index({ meetingId: 1, status: 1 });
+
 module.exports = mongoose.model('MeetingParticipant', meetingParticipantSchema);

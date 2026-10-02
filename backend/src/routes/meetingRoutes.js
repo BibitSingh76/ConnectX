@@ -8,28 +8,26 @@ const {
   getSummary,
   getMeetings,
 } = require('../controllers/meetingController');
-const { optionalAuth } = require('../middleware/authMiddleware');
+const { protect, optionalAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.use(optionalAuth);
-
-router.get('/summary', getSummary);
+router.get('/summary', protect, getSummary);
 
 router.route('/')
-  .post(createMeeting)
-  .get(getMeetings);
+  .post(protect, createMeeting)
+  .get(protect, getMeetings);
 
 router.route('/:id')
-  .get(getMeeting);
+  .get(optionalAuth, getMeeting);
 
 router.route('/:id/join')
-  .post(joinMeeting);
+  .post(optionalAuth, joinMeeting);
 
 router.route('/:id/leave')
-  .post(leaveMeeting);
+  .post(optionalAuth, leaveMeeting);
 
 router.route('/:id/end')
-  .patch(endMeeting);
+  .patch(protect, endMeeting);
 
 module.exports = router;

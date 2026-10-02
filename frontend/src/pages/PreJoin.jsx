@@ -7,7 +7,8 @@ import { Input } from '../components/Input';
 import { SettingsModal } from '../components/modals/SettingsModal';
 import { useMeeting } from '../context/MeetingContext';
 import { useToast } from '../context/ToastContext';
-import { getMeetingApi, joinMeetingApi } from '../services/apiService';
+import { joinMeetingApi } from '../services/apiService';
+import { getSafeUserMedia } from '../services/webrtcService';
 
 export const PreJoin = () => {
   const { roomId: paramRoomId } = useParams();
@@ -28,23 +29,31 @@ export const PreJoin = () => {
       setRoomId(paramRoomId);
     }
 
+    let isMounted = true;
     let localStream;
     const setupCamera = async () => {
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream = await getSafeUserMedia();
+        if (!isMounted) {
+          localStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         setStream(localStream);
         if (videoRef.current) {
           videoRef.current.srcObject = localStream;
         }
       } catch (err) {
-        console.warn('Camera/Microphone access notice:', err);
-        setMediaError('Could not access camera/microphone preview.');
+        if (isMounted) {
+          console.warn('Camera/Microphone access notice:', err);
+          setMediaError('Could not access camera/microphone preview.');
+        }
       }
     };
 
     setupCamera();
 
     return () => {
+      isMounted = false;
       if (localStream) {
         localStream.getTracks().forEach((track) => track.stop());
       }
@@ -85,11 +94,6 @@ export const PreJoin = () => {
   const handleEnterMeeting = async () => {
     if (!currentRoomId) return;
     try {
-      const meetingRes = await getMeetingApi(currentRoomId);
-      if (meetingRes.data?.status === 'ended') {
-        addToast('This meeting has already ended.', 'error');
-        return;
-      }
       await joinMeetingApi(currentRoomId, { displayName: userName || 'Guest' });
       navigate(`/meeting/${currentRoomId}`);
     } catch (err) {

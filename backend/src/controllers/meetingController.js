@@ -7,7 +7,7 @@ const { meetingService } = require('../services');
  * @access Public / Authenticated
  */
 const createMeeting = asyncHandler(async (req, res) => {
-  const { meetingId, title, hostName } = req.body;
+  const { meetingId, title } = req.body;
 
   if (!meetingId) {
     return res.status(400).json({
@@ -19,11 +19,21 @@ const createMeeting = asyncHandler(async (req, res) => {
     });
   }
 
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: 'Authentication required to create a meeting',
+        statusCode: 401,
+      },
+    });
+  }
+
   const meeting = await meetingService.createMeeting({
     meetingId,
     title,
-    hostName: req.user ? req.user.name : hostName,
-    hostId: req.user ? req.user._id : null,
+    hostId: req.user._id,
+    hostName: req.user.name,
   });
 
   res.status(201).json({
@@ -93,12 +103,22 @@ const leaveMeeting = asyncHandler(async (req, res) => {
 /**
  * @desc   End an active meeting session
  * @route  PATCH /api/meetings/:id/end
- * @access Public / Authenticated
+ * @access Authenticated (Host Only)
  */
 const endMeeting = asyncHandler(async (req, res) => {
   const meetingId = req.params.id;
 
-  const meeting = await meetingService.endMeeting(meetingId, req.user ? req.user._id : null);
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: 'Authentication required to end a meeting',
+        statusCode: 401,
+      },
+    });
+  }
+
+  const meeting = await meetingService.endMeeting(meetingId, req.user._id);
 
   res.status(200).json({
     success: true,
@@ -109,10 +129,20 @@ const endMeeting = asyncHandler(async (req, res) => {
 /**
  * @desc   Get dashboard summary analytics
  * @route  GET /api/meetings/summary
- * @access Public / Authenticated
+ * @access Authenticated
  */
 const getSummary = asyncHandler(async (req, res) => {
-  const summary = await meetingService.getSummaryMetrics();
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: 'Authentication required',
+        statusCode: 401,
+      },
+    });
+  }
+
+  const summary = await meetingService.getSummaryMetrics(req.user._id);
 
   res.status(200).json({
     success: true,
@@ -121,14 +151,25 @@ const getSummary = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc   List all meetings
+ * @desc   List meetings for authenticated user
  * @route  GET /api/meetings
- * @access Public / Authenticated
+ * @access Authenticated
  */
 const getMeetings = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: 'Authentication required',
+        statusCode: 401,
+      },
+    });
+  }
+
   const { status, limit, page } = req.query;
 
   const result = await meetingService.listMeetings({
+    userId: req.user._id,
     status,
     limit,
     page,

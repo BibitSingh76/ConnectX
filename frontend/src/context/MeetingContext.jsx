@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo } from 'react';
 
 const MeetingContext = createContext();
 
@@ -8,19 +8,22 @@ export const MeetingProvider = ({ children }) => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
 
+  const value = useMemo(
+    () => ({
+      roomId,
+      setRoomId,
+      userName,
+      setUserName,
+      isMicOn,
+      setIsMicOn,
+      isCamOn,
+      setIsCamOn,
+    }),
+    [roomId, userName, isMicOn, isCamOn]
+  );
+
   return (
-    <MeetingContext.Provider
-      value={{
-        roomId,
-        setRoomId,
-        userName,
-        setUserName,
-        isMicOn,
-        setIsMicOn,
-        isCamOn,
-        setIsCamOn,
-      }}
-    >
+    <MeetingContext.Provider value={value}>
       {children}
     </MeetingContext.Provider>
   );
